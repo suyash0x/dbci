@@ -2,15 +2,24 @@ package publisher
 
 import (
 	"dbci/helpers"
+	"dbci/pkg/vcs"
 	"fmt"
 	"log"
 	"net"
 )
 
-type Publisher struct{}
+type VersionControl interface {
+	Start()
+}
+
+type Publisher struct {
+	VersionControl
+}
 
 func New() *Publisher {
-	return &Publisher{}
+	return &Publisher{
+		VersionControl: vcs.New(),
+	}
 }
 
 func (p *Publisher) Start() {
@@ -22,6 +31,7 @@ func (p *Publisher) Start() {
 	helpers.FatalOutError("Listening Tcp Server", err)
 
 	log.Println("Publisher Listening on :8080")
+	p.VersionControl.Start()
 
 	for {
 		connection, err := listener.Accept()
