@@ -9,16 +9,18 @@ import (
 )
 
 type VersionControl interface {
-	Start()
+	Start(monitorChan chan string)
 }
 
 type Publisher struct {
 	VersionControl
+	monitorChan chan string
 }
 
-func New() *Publisher {
-	return &Publisher{
-		VersionControl: vcs.New(),
+func (p *Publisher) monitor() {
+	for {
+		environment := <-p.monitorChan
+		log.Println(environment)
 	}
 }
 
@@ -31,7 +33,8 @@ func (p *Publisher) Start() {
 	helpers.FatalOutError("Listening Tcp Server", err)
 
 	log.Println("Publisher Listening on :8080")
-	p.VersionControl.Start()
+	go p.VersionControl.Start(p.monitorChan)
+	go p.monitor()
 
 	for {
 		connection, err := listener.Accept()
@@ -41,4 +44,11 @@ func (p *Publisher) Start() {
 		log.Println("Remote connection accepted ", remoteAddr)
 	}
 
+}
+
+func New() *Publisher {
+	return &Publisher{
+		VersionControl: vcs.New(),
+		monitorChan:    make(chan string),
+	}
 }
