@@ -14,7 +14,7 @@ func New() *BuildServer {
 	return &BuildServer{}
 }
 
-func (b *BuildServer) Start() {
+func (b *BuildServer) Start(env string) {
 
 	addr, err := net.ResolveTCPAddr("tcp", ":8080")
 	helpers.FatalOutError("Starting Build Server: ", err)
@@ -24,6 +24,10 @@ func (b *BuildServer) Start() {
 	helpers.FatalOutError("Connecting to the publisher: ", err)
 
 	log.Println("build server started at", publisher.LocalAddr().String())
+
+	w := bufio.NewWriter(publisher)
+	w.WriteString(env + "\n")
+	w.Flush()
 
 	for {
 		publisherMsg, err := bufio.NewReader(publisher).ReadString('\n')
