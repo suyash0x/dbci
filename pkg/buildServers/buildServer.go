@@ -6,12 +6,33 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 )
 
-type BuildServer struct{}
+type BuildServer struct {
+	signal chan string
+}
 
 func New() *BuildServer {
-	return &BuildServer{}
+	return &BuildServer{
+		signal: make(chan string),
+	}
+}
+
+func (b *BuildServer) triggerProcess() {
+	for {
+		env := <-b.signal
+		log.Println("Pulling repo from", env)
+		time.Sleep(time.Second * 2)
+
+		log.Println("Building")
+		time.Sleep(time.Second * 2)
+
+		log.Println("Deploying")
+		time.Sleep(time.Second * 2)
+
+		log.Println("Deployed")
+	}
 }
 
 func (b *BuildServer) Start(env string) {
@@ -29,13 +50,16 @@ func (b *BuildServer) Start(env string) {
 	w.WriteString(env + "\n")
 	w.Flush()
 
+	go b.triggerProcess()
+
 	for {
 		publisherMsg, err := bufio.NewReader(publisher).ReadString('\n')
 
 		msg := fmt.Sprintf("Reading remote address %s", publisher.RemoteAddr().String())
 		helpers.LogError(msg, err)
 
-		log.Println(publisherMsg)
+		b.signal <- publisherMsg
+
 	}
 
 }
